@@ -2,11 +2,15 @@ import { GetStaticProps } from 'next';
 
 import Prismic from '@prismicio/client';
 import { FiCalendar, FiUser } from 'react-icons/fi';
+import { useState } from 'react';
+import { format } from 'date-fns';
+import ptBR from 'date-fns/locale/pt-BR';
 import Header from '../components/Header';
 import { getPrismicClient } from '../services/prismic';
 
 import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
+import Link from 'next/link';
 
 interface Post {
   uid?: string;
@@ -19,7 +23,7 @@ interface Post {
 }
 
 interface PostPagination {
-  next_page: string;
+  next_page: string | null;
   results: Post[];
 }
 
@@ -27,108 +31,52 @@ interface HomeProps {
   postsPagination: PostPagination;
 }
 
-export default function Home() {
+export default function Home({ postsPagination }: HomeProps) {
+  const [nextPage, setNextPage] = useState<string | null>(
+    postsPagination.next_page
+  );
+  const [posts, setPosts] = useState(postsPagination.results);
+
+  const formatPublicationDate = (date: string) =>
+    format(new Date(date), 'dd MMM yyy', { locale: ptBR });
+
+  const loadMorePosts = async () => {
+    const response = await fetch(nextPage);
+    const data = await response.json();
+    setPosts(oldVal => [...oldVal, ...data.results]);
+    setNextPage(data.next_page);
+  };
+
   return (
     <>
       <main className={styles.mainContainer}>
         <Header />
         <div className={styles.posts}>
-          <a>
-            <strong>Como utilizar hooks</strong>
-            <p>Pensando em sicronização em vez de ciclos de vida</p>
-            <div className={styles.postInfo}>
-              <div>
-                <FiCalendar />
-                <time>19 de Abril 2021</time>
-              </div>
-              <div>
-                <FiUser />
-                <span>Danilo Vieira</span>
-              </div>
-            </div>
-          </a>
-          <a>
-            <strong>Criando um app CRA do zero</strong>
-            <p>
-              Tudo sobre como criar a sua primeira aplicação utilizando Create
-              React App
-            </p>
-            <div className={styles.postInfo}>
-              <div>
-                <FiCalendar />
-                <time>16 de Abril 2021</time>
-              </div>
-              <div>
-                <FiUser />
-                <span>Joseph Vieira</span>
-              </div>
-            </div>
-          </a>
-
-          <a>
-            <strong>Como utilizar hooks</strong>
-            <p>Pensando em sicronização em vez de ciclos de vida</p>
-            <div className={styles.postInfo}>
-              <div>
-                <FiCalendar />
-                <time>19 de Abril 2021</time>
-              </div>
-              <div>
-                <FiUser />
-                <span>Danilo Vieira</span>
-              </div>
-            </div>
-          </a>
-          <a>
-            <strong>Criando um app CRA do zero</strong>
-            <p>
-              Tudo sobre como criar a sua primeira aplicação utilizando Create
-              React App
-            </p>
-            <div className={styles.postInfo}>
-              <div>
-                <FiCalendar />
-                <time>16 de Abril 2021</time>
-              </div>
-              <div>
-                <FiUser />
-                <span>Joseph Vieira</span>
-              </div>
-            </div>
-          </a>
-
-          <a>
-            <strong>Como utilizar hooks</strong>
-            <p>Pensando em sicronização em vez de ciclos de vida</p>
-            <div className={styles.postInfo}>
-              <div>
-                <FiCalendar />
-                <time>19 de Abril 2021</time>
-              </div>
-              <div>
-                <FiUser />
-                <span>Danilo Vieira</span>
-              </div>
-            </div>
-          </a>
-          <a>
-            <strong>Criando um app CRA do zero</strong>
-            <p>
-              Tudo sobre como criar a sua primeira aplicação utilizando Create
-              React App
-            </p>
-            <div className={styles.postInfo}>
-              <div>
-                <FiCalendar />
-                <time>16 de Abril 2021</time>
-              </div>
-              <div>
-                <FiUser />
-                <span>Joseph Vieira</span>
-              </div>
-            </div>
-          </a>
-          <button type="button">Carregar mais posts</button>
+          {posts.map(post => (
+            <Link key={post.uid} href={`post/${post.uid}`}>
+              <a>
+                <strong>{post.data.title}</strong>
+                <p>{post.data.subtitle}</p>
+                <div className={styles.postInfo}>
+                  <div>
+                    <FiCalendar />
+                    <time>
+                      {formatPublicationDate(post.first_publication_date)}
+                    </time>
+                  </div>
+                  <div>
+                    <FiUser />
+                    <span>{post.data.author}</span>
+                  </div>
+                </div>
+              </a>
+            </Link>
+          ))}
+          {!!nextPage && (
+            <button type="button" onClick={loadMorePosts}>
+              Carregar mais posts
+            </button>
+          )}
         </div>
       </main>
     </>
@@ -137,13 +85,17 @@ export default function Home() {
 
 export const getStaticProps = async () => {
   const prismic = getPrismicClient();
-  const postsResponse = await prismic.query(
-    Prismic.predicates.at('document.type', 'post')
+  const { results, next_page } = await prismic.query(
+    Prismic.predicates.at('document.type', 'post'),
+    { pageSize: 5 }
   );
 
-  console.log(JSON.stringify(postsResponse, null, 2));
-
   return {
-    props: {},
+    props: {
+      postsPagination: {
+        results,
+        next_page,
+      },
+    },
   };
 };
