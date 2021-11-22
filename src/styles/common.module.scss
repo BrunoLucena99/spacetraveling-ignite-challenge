@@ -3,3 +3,16 @@
   margin: 0 auto;
   padding: 0 2rem;
 }
+
+.infoBox {
+  display: flex;
+  align-items: center;
+
+  svg {
+    margin-right: 0.5rem;
+  }
+
+  span {
+    color: var(--info);
+  }
+}

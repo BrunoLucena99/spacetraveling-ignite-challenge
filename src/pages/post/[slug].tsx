@@ -1,15 +1,17 @@
 import React, { useMemo } from 'react';
-import { format } from 'date-fns';
 import { GetStaticPaths, GetStaticProps } from 'next';
-import ptBR from 'date-fns/locale/pt-BR';
 import { useRouter } from 'next/router';
 import Prismic from '@prismicio/client';
+import { FiUser, FiClock } from 'react-icons/fi';
+import { RichText } from 'prismic-dom';
 import Header from '../../components/Header';
 
 import { getPrismicClient } from '../../services/prismic';
 
 import commonStyles from '../../styles/common.module.scss';
 import styles from './post.module.scss';
+import { PublicationDate } from '../../components/PublicationDate';
+import { InfoBox } from '../../components/InfoBox';
 
 interface Post {
   first_publication_date: string | null;
@@ -35,14 +37,19 @@ interface PostProps {
 export default function Post({ post }: PostProps) {
   const router = useRouter();
 
-  const formattedDate = useMemo(() => {
-    if (!post?.first_publication_date) {
-      return '';
+  const estimatedReadingTime = useMemo(() => {
+    if (!post?.data.content) {
+      return 0;
     }
-    return format(new Date(post.first_publication_date), 'dd MMM yyy', {
-      locale: ptBR,
-    });
-  }, [post?.first_publication_date]);
+
+    const totalWords = post.data.content.reduce((acc, actual) => {
+      const text = RichText.asText(actual.body);
+      const wordsQtd = text.split(' ').length;
+      return acc + wordsQtd;
+    }, 0);
+
+    return Math.ceil(totalWords / 200);
+  }, [post?.data.content]);
 
   return (
     <>
@@ -63,9 +70,9 @@ export default function Post({ post }: PostProps) {
           <main className={`${commonStyles.mainContainer} ${styles.content}`}>
             <h1>{post.data.title}</h1>
             <div className={styles.postInfo}>
-              <time>{formattedDate}</time>
-              <span>{post.data.author}</span>
-              <time>4 min</time>
+              <PublicationDate date={post.first_publication_date} />
+              <InfoBox icon={FiUser} value={post.data.author} />
+              <InfoBox icon={FiClock} value={`${estimatedReadingTime} min`} />
             </div>
             {post.data.content.map((content, index) => (
               <React.Fragment key={`${content.heading}-${index + 1}`}>

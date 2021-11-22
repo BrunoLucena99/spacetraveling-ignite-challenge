@@ -1,7 +1,7 @@
 import { GetStaticProps } from 'next';
 
 import Prismic from '@prismicio/client';
-import { FiCalendar, FiUser } from 'react-icons/fi';
+import { FiUser } from 'react-icons/fi';
 import { useState } from 'react';
 import { format } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
@@ -10,6 +10,8 @@ import Header from '../components/Header';
 import { getPrismicClient } from '../services/prismic';
 
 import styles from './home.module.scss';
+import { InfoBox } from '../components/InfoBox';
+import { PublicationDate } from '../components/PublicationDate';
 
 interface Post {
   uid?: string;
@@ -57,16 +59,8 @@ export default function Home({ postsPagination }: HomeProps) {
                 <strong>{post.data.title}</strong>
                 <p>{post.data.subtitle}</p>
                 <div className={styles.postInfo}>
-                  <div>
-                    <FiCalendar />
-                    <time>
-                      {formatPublicationDate(post.first_publication_date)}
-                    </time>
-                  </div>
-                  <div>
-                    <FiUser />
-                    <span>{post.data.author}</span>
-                  </div>
+                  <PublicationDate date={post.first_publication_date} />
+                  <InfoBox icon={FiUser} value={post.data.author} />
                 </div>
               </a>
             </Link>
