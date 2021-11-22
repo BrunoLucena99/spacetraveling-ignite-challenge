@@ -5,12 +5,11 @@ import { FiCalendar, FiUser } from 'react-icons/fi';
 import { useState } from 'react';
 import { format } from 'date-fns';
 import ptBR from 'date-fns/locale/pt-BR';
+import Link from 'next/link';
 import Header from '../components/Header';
 import { getPrismicClient } from '../services/prismic';
 
-import commonStyles from '../styles/common.module.scss';
 import styles from './home.module.scss';
-import Link from 'next/link';
 
 interface Post {
   uid?: string;
@@ -83,7 +82,7 @@ export default function Home({ postsPagination }: HomeProps) {
   );
 }
 
-export const getStaticProps = async () => {
+export const getStaticProps: GetStaticProps = async () => {
   const prismic = getPrismicClient();
   const { results, next_page } = await prismic.query(
     Prismic.predicates.at('document.type', 'post'),
